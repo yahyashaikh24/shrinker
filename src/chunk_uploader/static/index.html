@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chunked File Upload</title>
+</head>
+<body>
+  <h1>Upload Large File</h1>
+  <input type="file" id="fileInput" />
+  <button onclick="upload()">Upload</button>
+
+  <p id="status"></p>
+
+  <script>
+    const CHUNK_SIZE = 5 * 1024; // 5 MB
+
+    async function upload() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert("Select a file first.");
+
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      const fileId = crypto.randomUUID(); // Unique per upload
+      const statusEl = document.getElementById('status');
+
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(file.size, start + CHUNK_SIZE);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append("file", chunk);
+        formData.append("chunk_index", i);
+        formData.append("total_chunks", totalChunks);
+        formData.append("file_id", fileId);
+        formData.append("original_filename", file.name);
+
+        try {
+          const response = await fetch("/upload_chunk", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+          console.log(`Chunk ${i} uploaded:`, result);
+
+          statusEl.innerText = `Uploaded chunk ${i + 1} of ${totalChunks}`;
+
+          if (result.status === "assembled") {
+            statusEl.innerText = `✅ File uploaded successfully: ${result.path}`;
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          statusEl.innerText = `❌ Error uploading chunk ${i}`;
+          break;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

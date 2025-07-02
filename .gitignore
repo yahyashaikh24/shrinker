@@ -1,5 +1,9 @@
 #Enviroment
 *.venv
 
+#VSCODE
+launch.json
+
 #pychache
 *.pychache
+*.pyc
